@@ -3,8 +3,10 @@
 namespace XLaravel\Embedding\Driver\SqlServer\Tests\Feature;
 
 use XLaravel\Embedding\Contracts\VectorStore;
+use XLaravel\Embedding\Contracts\VectorStoreMetrics;
 use XLaravel\Embedding\Driver\SqlServer\SqlServerDriver;
 use XLaravel\Embedding\Driver\SqlServer\SqlServerVectorStore;
+use XLaravel\Embedding\Driver\SqlServer\SqlServerVectorStoreMetrics;
 use XLaravel\Embedding\Driver\SqlServer\Tests\Fixtures\Models\Post;
 use XLaravel\Embedding\Driver\SqlServer\Tests\TestCase;
 use XLaravel\Embedding\SimilarityManager;
@@ -39,5 +41,23 @@ class SqlServerEmbeddingServiceProviderTest extends TestCase
 
         $this->assertNotNull($post->fresh()->embedding);
         $this->assertIsArray($post->fresh()->embedding->vector);
+    }
+
+    public function test_it_binds_sqlserver_vector_store_metrics(): void
+    {
+        $this->assertInstanceOf(SqlServerVectorStoreMetrics::class, app(VectorStoreMetrics::class));
+    }
+
+    public function test_metrics_snapshot_reports_rows_and_byte_sizes(): void
+    {
+        Post::create(['title' => 'Laravel', 'body' => 'PHP Framework']);
+
+        $snapshot = app(VectorStoreMetrics::class)->snapshot();
+
+        $this->assertSame(1, $snapshot['rows']);
+        $this->assertIsInt($snapshot['bytes']);
+        $this->assertIsInt($snapshot['data_bytes']);
+        $this->assertIsInt($snapshot['index_bytes']);
+        $this->assertGreaterThan(0, $snapshot['bytes']);
     }
 }

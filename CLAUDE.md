@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 SQL Server 2025 / Azure SQL native vector driver for `x-laravel/embedding`. Handles both similarity search and vector storage using SQL Server's native VECTOR type.
 
 - **Package name:** `x-laravel/embedding-sqlsrv-driver` — **Namespace:** `XLaravel\Embedding\Driver\SqlServer`
-- PHP `^8.3` + `ext-sqlsrv` + `ext-pdo_sqlsrv` + Microsoft ODBC Driver 18, Laravel (illuminate) `^12.0|^13.0`, `x-laravel/embedding ^1.0`
+- PHP `^8.3` + `ext-sqlsrv` + `ext-pdo_sqlsrv` + Microsoft ODBC Driver 18, Laravel (illuminate) `^12.0|^13.0`, `x-laravel/embedding ^1.2`
 - SQL Server 2025 or Azure SQL Database
 - Dev: Orchestra Testbench `^10.0|^11.0`, PHPUnit `^11.0|^12.0`
 
@@ -35,7 +35,8 @@ Tests require a live SQL Server 2025 instance — the `sqlsrv` service in `docke
 |------|----------------|
 | `SqlServerDriver.php` | Implements `SimilarityDriver`. Builds `1 - VECTOR_DISTANCE('cosine', vector, CAST(? AS VECTOR(n)))` query, loads models via `findMany()`, sets `similarity_score` on each. |
 | `SqlServerVectorStore.php` | Implements `VectorStore`. Writes embeddings via `MERGE INTO ... USING DUAL` with `CAST(? AS VECTOR(n))`. |
-| `SqlServerEmbeddingServiceProvider.php` | `register()` binds `VectorStore` → `SqlServerVectorStore`. `boot()` registers `sqlsrv` similarity driver, adds `CAST(vector AS NVARCHAR(MAX))` global scope to `Embedding` model, loads migration, publishes under `embedding-sqlsrv-migrations` tag. |
+| `SqlServerVectorStoreMetrics.php` | Implements `VectorStoreMetrics`. Returns `Embedding::count()` for `rows`; aggregates `sys.tables` + `sys.indexes` + `sys.partitions` + `sys.allocation_units` for the byte fields. `index_bytes` is derived as `total - data`. Falls back to `null` byte fields if the user lacks `VIEW DATABASE STATE`. |
+| `SqlServerEmbeddingServiceProvider.php` | `register()` binds `VectorStore` → `SqlServerVectorStore` and `VectorStoreMetrics` → `SqlServerVectorStoreMetrics`. `boot()` registers `sqlsrv` similarity driver, adds `CAST(vector AS NVARCHAR(MAX))` global scope to `Embedding` model, loads migration, publishes under `embedding-sqlsrv-migrations` tag. |
 
 ## Test Structure (`tests/`)
 
@@ -51,7 +52,8 @@ Tests require a live SQL Server 2025 instance — the `sqlsrv` service in `docke
 
 ```
 register()
-  └─► app->bind(VectorStore::class, SqlServerVectorStore::class)
+  ├─► app->bind(VectorStore::class, SqlServerVectorStore::class)
+  └─► app->bind(VectorStoreMetrics::class, SqlServerVectorStoreMetrics::class)
 
 boot()
   ├─► loadMigrationsFrom(...)

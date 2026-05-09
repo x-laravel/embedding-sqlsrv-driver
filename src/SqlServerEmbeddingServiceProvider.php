@@ -4,6 +4,7 @@ namespace XLaravel\Embedding\Driver\SqlServer;
 
 use Illuminate\Support\ServiceProvider;
 use XLaravel\Embedding\Contracts\VectorStore;
+use XLaravel\Embedding\Contracts\VectorStoreMetrics;
 use XLaravel\Embedding\Models\Embedding;
 use XLaravel\Embedding\SimilarityManager;
 
@@ -39,5 +40,6 @@ class SqlServerEmbeddingServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(VectorStore::class, SqlServerVectorStore::class);
+        $this->app->bind(VectorStoreMetrics::class, SqlServerVectorStoreMetrics::class);
     }
 }
