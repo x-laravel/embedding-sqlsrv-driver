@@ -1,0 +1,80 @@
+services:
+  sqlsrv:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Str0ng!Pass"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Str0ng!Pass' -C -Q 'SELECT 1' -b 2>/dev/null && echo ok || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  php83:
+    build:
+      context: .
+      args:
+        PHP_VERSION: "8.3"
+    volumes:
+      - .:/app
+      - vendor83:/app/vendor
+    environment:
+      - DB_HOST=sqlsrv
+      - DB_PORT=1433
+      - DB_DATABASE=embedding_test
+      - DB_USERNAME=sa
+      - DB_PASSWORD=Str0ng!Pass
+    depends_on:
+      sqlsrv:
+        condition: service_healthy
+    entrypoint: ["sh", "-c", "composer install --no-interaction && php scripts/create-db.php && vendor/bin/phpunit"]
+    profiles: ["php83"]
+
+  php84:
+    build:
+      context: .
+      args:
+        PHP_VERSION: "8.4"
+    volumes:
+      - .:/app
+      - vendor84:/app/vendor
+    environment:
+      - DB_HOST=sqlsrv
+      - DB_PORT=1433
+      - DB_DATABASE=embedding_test
+      - DB_USERNAME=sa
+      - DB_PASSWORD=Str0ng!Pass
+    depends_on:
+      sqlsrv:
+        condition: service_healthy
+    entrypoint: ["sh", "-c", "composer install --no-interaction && php scripts/create-db.php && vendor/bin/phpunit"]
+    profiles: ["php84"]
+
+  php85:
+    build:
+      context: .
+      args:
+        PHP_VERSION: "8.5"
+    volumes:
+      - .:/app
+      - vendor85:/app/vendor
+    environment:
+      - DB_HOST=sqlsrv
+      - DB_PORT=1433
+      - DB_DATABASE=embedding_test
+      - DB_USERNAME=sa
+      - DB_PASSWORD=Str0ng!Pass
+    depends_on:
+      sqlsrv:
+        condition: service_healthy
+    entrypoint: ["sh", "-c", "composer install --no-interaction && php scripts/create-db.php && vendor/bin/phpunit"]
+    profiles: ["php85"]
+
+volumes:
+  vendor83:
+  vendor84:
+  vendor85:
